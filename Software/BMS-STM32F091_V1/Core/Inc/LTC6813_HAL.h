@@ -8,6 +8,8 @@
 #ifndef INC_LTC6813_HAL_H_
 #define INC_LTC6813_HAL_H_
 
+#include <stdbool.h>
+#include <stdlib.h>
 #include "LTC681x_HAL.h"
 
 /* Helper function to initialize register limits. */

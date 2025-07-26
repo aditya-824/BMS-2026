@@ -1,0 +1,8 @@
+../Core/Src/LT_HAL_SPI.c:20:6:cs_low	1
+../Core/Src/LT_HAL_SPI.c:25:6:cs_high	1
+../Core/Src/LT_HAL_SPI.c:30:6:delay_u	2
+../Core/Src/LT_HAL_SPI.c:36:6:delay_m	1
+../Core/Src/LT_HAL_SPI.c:45:6:spi_enable	1
+../Core/Src/LT_HAL_SPI.c:57:6:spi_write_array	2
+../Core/Src/LT_HAL_SPI.c:76:6:spi_write_read	3
+../Core/Src/LT_HAL_SPI.c:100:9:spi_read_byte	1

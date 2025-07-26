@@ -6,8 +6,10 @@
  */
 
 #include <stdint.h>
-#include "LTC681x_HAL.h"
+#include <stdbool.h>
+#include <stdlib.h>
 #include "LTC6813_HAL.h"
+#include "LTC681x_HAL.h"
 
 /* Helper function to initialize register limits. */
 void LTC6813_init_reg_limits(uint8_t total_ic, //Number of ICs in the system
@@ -465,7 +467,7 @@ void LTC6813_wrpsb(uint8_t total_ic, // Number of ICs in the system
 	cmd[0] = 0x00;
 	cmd[1] = 0x1C;
 	uint8_t current_ic = 0;
-	for(uint8_t current_ic = 0; current_ic<total_ic;current_ic++)
+	for(current_ic = 0; current_ic<total_ic;current_ic++)
 	{
 		if(ic->isospi_reverse == true){c_ic = current_ic;}
 		else{c_ic = total_ic - current_ic - 1;}
@@ -720,7 +722,7 @@ void LTC6813_set_cfgrb_gpio_b(uint8_t nIC, cell_asic *ic, bool gpiobits[])
 void LTC6813_set_cfgrb_dcc_b(uint8_t nIC, cell_asic *ic, bool dccbits[])
 {
 	int i = 0;
-	for(int i =0;i<7;i++)
+	for(i =0;i<7;i++)
 	{
 		if(i==0)
 		{

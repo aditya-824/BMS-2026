@@ -6,8 +6,9 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "LTC681x_HAL.h"
-#include "LT_HAL_SPI.h"
 
 const uint16_t crc15Table[256] = { 0x0, 0xc599, 0xceab, 0xb32, 0xd8cf, 0x1d56,
 		0x1664, 0xd3fd, 0xf407, 0x319e,
@@ -475,7 +476,7 @@ int8_t LTC681x_rdaux(uint8_t reg, //Determines which GPIO voltage register is re
 	if (reg == 0) {
 		uint8_t gpio_reg = 0;
 		int current_ic = 0;
-		for (uint8_t gpio_reg; gpio_reg < ic[0].ic_reg.num_gpio_reg + 1;
+		for (gpio_reg; gpio_reg < ic[0].ic_reg.num_gpio_reg + 1;
 				gpio_reg++) //Executes once for each of the LTC681x aux voltage registers
 				{
 			LTC681x_rdaux_reg(gpio_reg, total_ic, data); //Reads the raw auxiliary register data into the data[] array
@@ -997,7 +998,8 @@ int16_t LTC681x_run_cell_adc_st(uint8_t adc_reg, // Type of register
 	int16_t error = 0;
 	uint16_t expected_result = 0;
 
-	for (int self_test = 1; self_test < 3; self_test++) {
+	int self_test = 1;
+	for (self_test = 1; self_test < 3; self_test++) {
 		expected_result = LTC681x_st_lookup(md, self_test, adcopt);
 		wakeup_idle(total_ic);
 
@@ -1031,8 +1033,6 @@ int16_t LTC681x_run_cell_adc_st(uint8_t adc_reg, // Type of register
 
 			wakeup_idle(total_ic);
 			LTC681x_rdaux(0, total_ic, ic);
-			int cic = 0;
-			int channel = 0;
 			for (cic = 0; cic < total_ic; cic++) {
 				for (channel = 0; channel < ic[cic].ic_reg.aux_channels;
 						channel++) {
@@ -1051,8 +1051,7 @@ int16_t LTC681x_run_cell_adc_st(uint8_t adc_reg, // Type of register
 
 			wakeup_idle(total_ic);
 			error = LTC681x_rdstat(0, total_ic, ic);
-			int cic = 0;
-			int channel = 0;
+
 			for (cic = 0; cic < total_ic; cic++) {
 				for (channel = 0; channel < ic[cic].ic_reg.stat_channels;
 						channel++) {
@@ -1547,7 +1546,7 @@ void LTC681x_clear_discharge(uint8_t total_ic, // Number of ICs in the daisy cha
 							 )
 {
 	int i = 0;
-	for (int i=0; i<total_ic; i++)
+	for (i=0; i<total_ic; i++)
 	{
 	   ic[i].config.tx_data[4] = 0;
 	   ic[i].config.tx_data[5] =ic[i].config.tx_data[5]&(0xF0);

@@ -6,15 +6,16 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include "stm32f0xx_hal.h"
 #include "LT_HAL_SPI.h"
 
 #define output_low(pin)   HAL_GPIO_WritePin(CS_GPIO_PORT, pin, RESET)
 #define output_high(pin)  HAL_GPIO_WritePin(CS_GPIO_PORT, pin, SET)
 #define CS_GPIO_PORT GPIOA // GPIO Port for software CS pin
-#define SPI_Handle hspi1
 
-//#define SPI_Handle hspi1
+extern SPI_HandleTypeDef hspi1; // SPI Handle
+extern TIM_HandleTypeDef htim2; // Timer Handle
 
 void cs_low(uint8_t pin)
 {
@@ -63,7 +64,7 @@ void spi_write_array(uint8_t len, // Option: Number of bytes to be written on th
   for (i = 0; i < len; i++)
   {
 //	  SPI.transfer((int8_t)data[i]);
-	  HAL_SPI_TransmitReceive(&SPI_Handle, (uint8_t *)&data[i], &rx_data, 1, HAL_MAX_DELAY);
+	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)&data[i], &rx_data, 1, HAL_MAX_DELAY);
   }
 }
 
@@ -84,13 +85,13 @@ void spi_write_read(uint8_t tx_Data[],//array of data to be written on SPI port
   for (i = 0; i < tx_len; i++)
   {
 //	  SPI.transfer(tx_Data[i]);
-	  HAL_SPI_TransmitReceive(&SPI_Handle, (uint8_t*)&tx_Data[i], &data, 1, HAL_MAX_DELAY);
+	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&tx_Data[i], &data, 1, HAL_MAX_DELAY);
   }
 
   for (uint8_t i = 0; i < rx_len; i++)
   {
 //    rx_data[i] = (uint8_t)SPI.transfer(0xFF);
-	  HAL_SPI_TransmitReceive(&SPI_Handle, (uint8_t *)&0xFF, (uint8_t*)&rx_data[i], 1, HAL_MAX_DELAY);
+	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)0xFF, (uint8_t*)&rx_data[i], 1, HAL_MAX_DELAY);
   }
 
 }
@@ -100,6 +101,6 @@ uint8_t spi_read_byte(uint8_t tx_dat)
 {
   uint8_t data;
 //  data = (uint8_t)SPI.transfer(0xFF);
-  HAL_SPI_TransmitReceive(&SPI_Handle, (uint8_t *)&0xFF, (uint8_t *)&data, 1, HAL_MAX_DELAY);
+  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)0xFF, (uint8_t *)&data, 1, HAL_MAX_DELAY);
   return(data);
 }
