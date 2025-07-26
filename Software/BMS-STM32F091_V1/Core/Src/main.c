@@ -1,30 +1,32 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+/* Standard Includes */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
 
+/* LTC Library Includes */
 #include "LT_HAL_SPI.h"
 #include "LTC681x_HAL.h"
 #include "LTC6813_HAL.h"
@@ -43,9 +45,9 @@
 #define DATALOG_DISABLED 0
 #define PWM 1
 #define SCTL 2
-#define TOTAL_IC 18
-#define TOTAL_CELL 6
-#define TOTAL_TEMP 4
+#define TOTAL_IC 18 // Total no. of ICs in the accumulator
+#define TOTAL_CELL 6 // No. of cells per stack
+#define TOTAL_TEMP 4 // No. of temperatures per stack
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,24 +62,21 @@ CAN_HandleTypeDef hcan;
 
 SPI_HandleTypeDef hspi1;
 
-TIM_HandleTypeDef htim2;
-
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 /*******************************************************************
-  Setup Variables
-  The following variables can be modified to configure the software.
-********************************************************************/
-//const uint8_t TOTAL_IC = 18;//!< Number of ICs in the daisy chain; using define instead
-
+ Setup Variables
+ The following variables can be modified to configure the software.
+ ********************************************************************/
+//const uint8_t TOTAL_IC = 18;//!< Number of ICs in the daisy chain; USING DEFINE INSTEAD
 /********************************************************************
  ADC Command Configurations. See LTC681x.h for options
-*********************************************************************/
+ *********************************************************************/
 const uint8_t ADC_OPT = ADC_OPT_DISABLED; //!< ADC Mode option bit
-const uint8_t ADC_CONVERSION_MODE =MD_7KHZ_3KHZ; //!< ADC Mode
+const uint8_t ADC_CONVERSION_MODE = MD_7KHZ_3KHZ; //!< ADC Mode
 const uint8_t ADC_DCP = DCP_DISABLED; //!< Discharge Permitted
-const uint8_t CELL_CH_TO_CONVERT =CELL_CH_ALL; //!< Channel Selection for ADC conversion
+const uint8_t CELL_CH_TO_CONVERT = CELL_CH_ALL; //!< Channel Selection for ADC conversion
 const uint8_t AUX_CH_TO_CONVERT = AUX_CH_ALL; //!< Channel Selection for ADC conversion
 const uint8_t STAT_CH_TO_CONVERT = STAT_CH_ALL; //!< Channel Selection for ADC conversion
 const uint8_t SEL_ALL_REG = REG_ALL; //!< Register Selection
@@ -91,15 +90,15 @@ const uint16_t OV_THRESHOLD = 41000; //!< Over voltage threshold ADC Code. LSB =
 const uint16_t UV_THRESHOLD = 30000; //!< Under voltage threshold ADC Code. LSB = 0.0001 ---(3V)
 
 //Loop Measurement Setup. These Variables are ENABLED or DISABLED. Remember ALL CAPS
-const uint8_t WRITE_CONFIG = DISABLED;  //!< This is to ENABLED or DISABLED writing into to configuration registers in a continuous loop
+const uint8_t WRITE_CONFIG = DISABLED; //!< This is to ENABLED or DISABLED writing into to configuration registers in a continuous loop
 const uint8_t READ_CONFIG = DISABLED; //!< This is to ENABLED or DISABLED reading the configuration registers in a continuous loop
 const uint8_t MEASURE_CELL = ENABLED; //!< This is to ENABLED or DISABLED measuring the cell voltages in a continuous loop
 const uint8_t MEASURE_AUX = DISABLED; //!< This is to ENABLED or DISABLED reading the auxiliary registers in a continuous loop
 const uint8_t MEASURE_STAT = DISABLED; //!< This is to ENABLED or DISABLED reading the status registers in a continuous loop
 const uint8_t PRINT_PEC = DISABLED; //!< This is to ENABLED or DISABLED printing the PEC Error Count in a continuous loop
 /************************************
-  END SETUP
-*************************************/
+ END SETUP
+ *************************************/
 
 /*******************************************************
  Global Battery Variables received from 681x commands
@@ -111,20 +110,21 @@ cell_asic BMS_IC[TOTAL_IC]; //!< Global Battery Variable
 
 /*************************************************************************
  Set configuration register. Refer to the data sheet
-**************************************************************************/
+ **************************************************************************/
 bool REFON = true; //!< Reference Powered Up Bit
 bool ADCOPT = false; //!< ADC Mode option bit
-bool GPIOBITS_A[5] = {false,false,true,true,true}; //!< GPIO Pin Control // Gpio 1,2,3,4,5
-bool GPIOBITS_B[4] = {false,false,false,false}; //!< GPIO Pin Control // Gpio 6,7,8,9
-uint16_t UV=UV_THRESHOLD; //!< Under voltage Comparison Voltage
-uint16_t OV=OV_THRESHOLD; //!< Over voltage Comparison Voltage
-bool DCCBITS_A[12] = {false,false,false,false,false,false,false,false,false,false,false,false}; //!< Discharge cell switch //Dcc 1,2,3,4,5,6,7,8,9,10,11,12
-bool DCCBITS_B[7]= {false,false,false,false,false,false,false}; //!< Discharge cell switch //Dcc 0,13,14,15
-bool DCTOBITS[4] = {true,false,true,false}; //!< Discharge time value //Dcto 0,1,2,3  // Programed for 4 min
+bool GPIOBITS_A[5] = { true, true, true, true, false }; //!< GPIO Pin Control // Gpio 1,2,3,4,5
+bool GPIOBITS_B[4] = { false, false, false, false }; //!< GPIO Pin Control // Gpio 6,7,8,9
+uint16_t UV = UV_THRESHOLD; //!< Under voltage Comparison Voltage
+uint16_t OV = OV_THRESHOLD; //!< Over voltage Comparison Voltage
+bool DCCBITS_A[12] = { false, false, false, false, false, false, false, false,
+false, false, false, false }; //!< Discharge cell switch //Dcc 1,2,3,4,5,6,7,8,9,10,11,12
+bool DCCBITS_B[7] = { false, false, false, false, false, false, false }; //!< Discharge cell switch //Dcc 0,13,14,15
+bool DCTOBITS[4] = { true, false, true, false }; //!< Discharge time value //Dcto 0,1,2,3  // Programed for 4 min
 /*Ensure that Dcto bits are set according to the required discharge time. Refer to the data sheet */
 bool FDRF = false; //!< Force Digital Redundancy Failure Bit
 bool DTMEN = true; //!< Enable Discharge Timer Monitor
-bool PSBITS[2]= {false,false}; //!< Digital Redundancy Path Selection//ps-0,1
+bool PSBITS[2] = { false, false }; //!< Digital Redundancy Path Selection//ps-0,1
 
 /* USER CODE END PV */
 
@@ -132,14 +132,13 @@ bool PSBITS[2]= {false,false}; //!< Digital Redundancy Path Selection//ps-0,1
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_TIM2_Init(void);
 static void MX_CAN_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_ADC_Init(void);
 /* USER CODE BEGIN PFP */
 #ifdef __GNUC__
 /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
-   set to 'Yes') calls __io_putchar() */
+ set to 'Yes') calls __io_putchar() */
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #else
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
@@ -188,78 +187,67 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
-  MX_TIM2_Init();
   MX_CAN_Init();
   MX_USART1_UART_Init();
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
-  int8_t error = 0;
+	int8_t error = 0;
 
-  LTC6813_init_cfg(TOTAL_IC, BMS_IC);
+	LTC6813_init_cfg(TOTAL_IC, BMS_IC);
 //  LTC6813_init_cfgb(TOTAL_IC,BMS_IC);
-  for (uint8_t current_ic = 0; current_ic<TOTAL_IC;current_ic++)
-  {
-    LTC6813_set_cfgr(current_ic,BMS_IC,REFON,ADCOPT,GPIOBITS_A,DCCBITS_A, DCTOBITS, UV, OV);
+	for (uint8_t current_ic = 0; current_ic < TOTAL_IC; current_ic++) {
+		LTC6813_set_cfgr(current_ic, BMS_IC, REFON, ADCOPT, GPIOBITS_A,
+				DCCBITS_A, DCTOBITS, UV, OV);
 //    LTC6813_set_cfgrb(current_ic,BMS_IC,FDRF,DTMEN,PSBITS,GPIOBITS_B,DCCBITS_B);
-  }
-  LTC6813_reset_crc_count(TOTAL_IC,BMS_IC);
-  LTC6813_init_reg_limits(TOTAL_IC,BMS_IC);
+	}
+	LTC6813_reset_crc_count(TOTAL_IC, BMS_IC);
+	LTC6813_init_reg_limits(TOTAL_IC, BMS_IC);
 
-  if (WRITE_CONFIG == ENABLED) {
-    wakeup_idle(TOTAL_IC);
-    LTC6813_wrcfg(TOTAL_IC, BMS_IC);
+	if (WRITE_CONFIG == ENABLED) {
+		wakeup_idle(TOTAL_IC);
+		LTC6813_wrcfg(TOTAL_IC, BMS_IC);
 //    LTC6813_wrcfgb(TOTAL_IC,BMS_IC);
-    print_wrconfig();
+		print_wrconfig();
 //    print_wrconfigb();
-  }
-  if (READ_CONFIG == ENABLED) {
-    wakeup_sleep(TOTAL_IC);
-    error = LTC6813_rdcfg(TOTAL_IC, BMS_IC);
-    check_error(error);
-    print_rxconfig();
-  }
+	}
 
-  if (READ_CONFIG == ENABLED)
-        {
-          wakeup_idle(TOTAL_IC);
-          error = LTC6813_rdcfg(TOTAL_IC,BMS_IC);
-          check_error(error);
+	if (READ_CONFIG == ENABLED) {
+		wakeup_idle(TOTAL_IC);
+		error = LTC6813_rdcfg(TOTAL_IC, BMS_IC);
+		check_error(error);
 //          error = LTC6813_rdcfgb(TOTAL_IC,BMS_IC);
 //          check_error(error);
-          print_rxconfig();
+		print_rxconfig();
 //          print_rxconfigb();
-        }
+	}
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  if (MEASURE_CELL == ENABLED)
-	        {
-	          wakeup_idle(TOTAL_IC);
-	          LTC6813_adcv(ADC_CONVERSION_MODE,ADC_DCP,CELL_CH_TO_CONVERT);
-	          LTC6813_pollAdc();
-	          wakeup_idle(TOTAL_IC);
-	          error = LTC6813_rdcv(0, TOTAL_IC,BMS_IC);
-	          check_error(error);
-	          print_cells(DATALOG_ENABLED);
-	        }
+	while (1) {
+		if (MEASURE_CELL == ENABLED) {
+			wakeup_idle(TOTAL_IC);
+			LTC6813_adcv(ADC_CONVERSION_MODE, ADC_DCP, CELL_CH_TO_CONVERT);
+			LTC6813_pollAdc();
+			wakeup_idle(TOTAL_IC);
+			error = LTC6813_rdcv(0, TOTAL_IC, BMS_IC);
+			check_error(error);
+			print_cells(DATALOG_ENABLED);
+		}
 
-	        if (MEASURE_AUX == ENABLED)
-	        {
-	          wakeup_idle(TOTAL_IC);
-	          LTC6813_adax(ADC_CONVERSION_MODE , AUX_CH_ALL);
-	          LTC6813_pollAdc();
-	          wakeup_idle(TOTAL_IC);
-	          error = LTC6813_rdaux(0,TOTAL_IC,BMS_IC); // Set to read back all aux registers
-	          check_error(error);
-	          print_aux(DATALOG_ENABLED);
-	        }
+		if (MEASURE_AUX == ENABLED) {
+			wakeup_idle(TOTAL_IC);
+			LTC6813_adax(ADC_CONVERSION_MODE, AUX_CH_TO_CONVERT);
+			LTC6813_pollAdc();
+			wakeup_idle(TOTAL_IC);
+			error = LTC6813_rdaux(0, TOTAL_IC, BMS_IC); // Set to read back all aux registers
+			check_error(error);
+			print_aux(DATALOG_ENABLED);
+		}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+	}
   /* USER CODE END 3 */
 }
 
@@ -276,12 +264,14 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI14;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI14|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.HSI14CalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -291,11 +281,11 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -497,17 +487,17 @@ static void MX_SPI1_Init(void)
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi1.Init.CRCPolynomial = 7;
   hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
@@ -515,51 +505,6 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
-}
-
-/**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 72-1;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0xFFFF-1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-
-  /* USER CODE END TIM2_Init 2 */
 
 }
 
@@ -611,8 +556,8 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -660,17 +605,16 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /**
-  * @brief  Retargets the C library printf function to the USART.
-  * @param  None
-  * @retval None
-  */
-PUTCHAR_PROTOTYPE
-{
-  /* Place your implementation of fputc here */
-  /* e.g. write a character to the USART1 and Loop until the end of transmission */
-  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+ * @brief  Retargets the C library printf function to the USART.
+ * @param  None
+ * @retval None
+ */
+PUTCHAR_PROTOTYPE {
+	/* Place your implementation of fputc here */
+	/* e.g. write a character to the USART1 and Loop until the end of transmission */
+	HAL_UART_Transmit(&huart1, (uint8_t*) &ch, 1, 0xFFFF);
 
-  return ch;
+	return ch;
 }
 
 /*!******************************************************************************
@@ -678,33 +622,30 @@ PUTCHAR_PROTOTYPE
  to the serial port.
  @return void
  ********************************************************************************/
-void print_wrconfig(void)
-{
-    int cfg_pec;
+void print_wrconfig(void) {
+	int cfg_pec;
 //    Serial.println(F("Written Configuration A Register: "))
-    printf("Written Configuration A Register: \n");
-    for (int current_ic = 0; current_ic<TOTAL_IC; current_ic++)
-    {
+	printf("Written Configuration A Register: \n");
+	for (int current_ic = 0; current_ic < TOTAL_IC; current_ic++) {
 //      Serial.print(F("CFGA IC "));
-    	printf("CFGA IC ");
+		printf("CFGA IC ");
 //      Serial.print(current_ic+1,DEC);
-    	printf("%d", current_ic+1);
-      for(int i = 0;i<6;i++)
-      {
+		printf("%d", current_ic + 1);
+		for (int i = 0; i < 6; i++) {
 //        Serial.print(F(", 0x"));
-    	  printf(", 0x");
-        serial_print_hex(BMS_IC[current_ic].config.tx_data[i]);
-      }
+			printf(", 0x");
+			serial_print_hex(BMS_IC[current_ic].config.tx_data[i]);
+		}
 //      Serial.print(F(", Calculated PEC: 0x"));
-      printf(", Calculated PEC: 0x");
-      cfg_pec = pec15_calc(6,&BMS_IC[current_ic].config.tx_data[0]);
-      serial_print_hex((uint8_t)(cfg_pec>>8));
+		printf(", Calculated PEC: 0x");
+		cfg_pec = pec15_calc(6, &BMS_IC[current_ic].config.tx_data[0]);
+		serial_print_hex((uint8_t) (cfg_pec >> 8));
 //      Serial.print(F(", 0x"));
-      printf(", 0x");
-      serial_print_hex((uint8_t)(cfg_pec));
+		printf(", 0x");
+		serial_print_hex((uint8_t) (cfg_pec));
 //      Serial.println("\n");
-      printf("/n");
-    }
+		printf("/n");
+	}
 }
 
 /*!*****************************************************************
@@ -712,109 +653,95 @@ void print_wrconfig(void)
  LTC6813 to the serial port.
  @return void
  *******************************************************************/
-void print_rxconfig(void)
-{
+void print_rxconfig(void) {
 //  Serial.println(F("Received Configuration A Register: "));
 	printf("Received Configuration A Register: \n");
-  for (int current_ic=0; current_ic<TOTAL_IC; current_ic++)
-  {
+	for (int current_ic = 0; current_ic < TOTAL_IC; current_ic++) {
 //    Serial.print(F("CFGA IC "));
-	  printf("CFGA IC ");
+		printf("CFGA IC ");
 //    Serial.print(current_ic+1,DEC);
-		printf("%d", current_ic+1);
-    for(int i = 0; i < 6; i++)
-    {
+		printf("%d", current_ic + 1);
+		for (int i = 0; i < 6; i++) {
 //      Serial.print(F(", 0x"));
-    	printf(", 0x");
-      serial_print_hex(BMS_IC[current_ic].config.rx_data[i]);
-    }
+			printf(", 0x");
+			serial_print_hex(BMS_IC[current_ic].config.rx_data[i]);
+		}
 //    Serial.print(F(", Received PEC: 0x"));
-    printf(", Received PEC: 0x");
-    serial_print_hex(BMS_IC[current_ic].config.rx_data[6]);
+		printf(", Received PEC: 0x");
+		serial_print_hex(BMS_IC[current_ic].config.rx_data[6]);
 //    Serial.print(F(", 0x"));
-    printf(", 0x");
-    serial_print_hex(BMS_IC[current_ic].config.rx_data[7]);
+		printf(", 0x");
+		serial_print_hex(BMS_IC[current_ic].config.rx_data[7]);
 //    Serial.println("\n");
-    printf("\n");
-  }
+		printf("\n");
+	}
 }
 
 /*!************************************************************
-  \brief Prints cell voltage codes to the serial port
-  @return void
+ \brief Prints cell voltage codes to the serial port
+ @return void
  *************************************************************/
-void print_cells(uint8_t datalog_en)
-{
-  for (int current_ic = 0 ; current_ic < TOTAL_IC; current_ic++)
-  {
-    if (datalog_en == 0)
-    {
+void print_cells(uint8_t datalog_en) {
+	for (int current_ic = 0; current_ic < TOTAL_IC; current_ic++) {
+		if (datalog_en == 0) {
 //      Serial.print(" IC ");
-    	printf("IC ");
+			printf("IC ");
 //      Serial.print(current_ic+1,DEC)
-    	printf("%d", current_ic+1);
+			printf("%d", current_ic + 1);
 //      Serial.print(", ");
-    	printf(", ");
-      for (int i=0; i<TOTAL_CELL; i++)
-      {
+			printf(", ");
+			for (int i = 0; i < TOTAL_CELL; i++) {
 //        Serial.print(" C");
-    	  printf(" C");
+				printf(" C");
 //        Serial.print(i+1,DEC);
-    	  printf("%d", i+1);
+				printf("%d", i + 1);
 //        Serial.print(":");
-    	  printf(":");
+				printf(":");
 //        Serial.print(BMS_IC[current_ic].cells.c_codes[i]*0.0001,4);
-    	  printf("%0.4f", BMS_IC[current_ic].cells.c_codes[i]*0.0001);
+				printf("%0.4f", BMS_IC[current_ic].cells.c_codes[i] * 0.0001);
 //        Serial.print(",");
-    	  printf(",");
-      }
+				printf(",");
+			}
 //      Serial.println();
-      printf("\n");
-    }
-    else
-    {
+			printf("\n");
+		} else {
 //      Serial.print(" Cells, ");
-    	printf(" Cells, ");
-      for (int i=0; i<TOTAL_CELL; i++)
-      {
+			printf(" Cells, ");
+			for (int i = 0; i < TOTAL_CELL; i++) {
 //        Serial.print(BMS_IC[current_ic].cells.c_codes[i]*0.0001,4);
-    	  printf("%0.4f", BMS_IC[current_ic].cells.c_codes[i]*0.0001);
+				printf("%0.4f", BMS_IC[current_ic].cells.c_codes[i] * 0.0001);
 //        Serial.print(",");
-    	  printf(",");
-      }
-    }
-  }
+				printf(",");
+			}
+		}
+	}
 //  Serial.println("\n");
-  printf("\n");
+	printf("\n");
 }
 
 /*!****************************************************************************
-  \brief Prints GPIO voltage codes and Vref2 voltage code onto the serial port
-  @return void
+ \brief Prints GPIO voltage codes and Vref2 voltage code onto the serial port
+ @return void
  *****************************************************************************/
-void print_aux(uint8_t datalog_en)
-{
-  for (int current_ic =0 ; current_ic < TOTAL_IC; current_ic++)
-  {
-    if (datalog_en == 0)
-    {
+void print_aux(uint8_t datalog_en) {
+	for (int current_ic = 0; current_ic < TOTAL_IC; current_ic++) {
+		if (datalog_en == 0) {
 //      Serial.print(" IC ");
-    	printf(" IC ");
+			printf(" IC ");
 //      Serial.print(current_ic+1,DEC);
-      printf("%d", current_ic+1);
-      for (int i=0; i < 5; i++)
-      {
+			printf("%d", current_ic + 1);
+			for (int i = 0; i < TOTAL_TEMP; i++) {
 //        Serial.print(F(" GPIO-"));
-    	  printf(" GPIO-");
+				printf(" GPIO-");
 //        Serial.print(i+1,DEC);
-    	  printf("%d", i+1);
+				printf("%d", i + 1);
 //        Serial.print(":");
-    	  printf(":");
+				printf(":");
 //        Serial.print(BMS_IC[current_ic].aux.a_codes[i]*0.0001,4);
-    	  printf("%0.4f", BMS_IC[current_ic].aux.a_codes[i]*0.0001);
+				printf("%0.4f", BMS_IC[current_ic].aux.a_codes[i] * 0.0001);
 //        Serial.print(",");
-    	  printf(",");
-      }
+				printf(",");
+			}
 
 //      for (int i=6; i < 10; i++)
 //      {
@@ -825,68 +752,61 @@ void print_aux(uint8_t datalog_en)
 //      }
 
 //      Serial.print(F(" Vref2"));
-      printf(" Vref2");
+			printf(" Vref2");
 //      Serial.print(":");
-      printf(":");
+			printf(":");
 //      Serial.print(BMS_IC[current_ic].aux.a_codes[5]*0.0001,4);
-      printf("%0.4f", BMS_IC[current_ic].aux.a_codes[5]*0.0001);
+			printf("%0.4f", BMS_IC[current_ic].aux.a_codes[5] * 0.0001);
 //      Serial.println();
-      printf("\n");
+			printf("\n");
 
 //      Serial.print(" OV/UV Flags : 0x");
-      printf(" OV/UV Flags : 0x");
+			printf(" OV/UV Flags : 0x");
 //      Serial.print((uint8_t)BMS_IC[current_ic].aux.a_codes[11],HEX);
-      printf("%02X", (uint8_t)BMS_IC[current_ic].aux.a_codes[11]);
+			printf("%02X", (uint8_t) BMS_IC[current_ic].aux.a_codes[11]);
 //      Serial.println();
-      printf("\n");
-    }
-    else
-    {
+			printf("\n");
+		} else {
 //      Serial.print(" AUX, ");
-    	printf(" AUX, ");
+			printf(" AUX, ");
 
-      for (int i=0; i < 12; i++)
-      {
+			for (int i = 0; i < 12; i++) {
 //        Serial.print((uint8_t)BMS_IC[current_ic].aux.a_codes[i]*0.0001,4);
-    	  printf("%.4f", (uint8_t)BMS_IC[current_ic].aux.a_codes[i] * 0.0001);
+				printf("%.4f",
+						(uint8_t) BMS_IC[current_ic].aux.a_codes[i] * 0.0001);
 //        Serial.print(",");
-        printf(",");
-      }
-    }
-  }
+				printf(",");
+			}
+		}
+	}
 // Serial.println("\n");
-  printf("\n");
+	printf("\n");
 }
 
 /*!****************************************************************************
-   \brief Function to print in HEX form
-   @return void
+ \brief Function to print in HEX form
+ @return void
  *****************************************************************************/
-void serial_print_hex(uint8_t data)
-{
-  if (data< 16)
-  {
+void serial_print_hex(uint8_t data) {
+	if (data < 16) {
 //    Serial.print("0");
-	  printf("0");
+		printf("0");
 //    Serial.print((byte)data,HEX);
-	  printf("%02X", (unsigned char)data);
-  }
-  else
+		printf("%02X", (unsigned char) data);
+	} else
 //    Serial.print((byte)data,HEX);
-	  printf("%02X", (unsigned char)data);
+		printf("%02X", (unsigned char) data);
 }
 
 /*!****************************************************************************
-  \brief Function to check error flag and print PEC error message
-  @return void
+ \brief Function to check error flag and print PEC error message
+ @return void
  *****************************************************************************/
-void check_error(int error)
-{
-  if (error == -1)
-  {
+void check_error(int error) {
+	if (error == -1) {
 //    Serial.println(F("A PEC error was detected in the received data"));
-	  printf("A PEC error was detected in the received data\n");
-  }
+		printf("A PEC error was detected in the received data\n");
+	}
 }
 /* USER CODE END 4 */
 
@@ -897,11 +817,10 @@ void check_error(int error)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1) {
+	}
   /* USER CODE END Error_Handler_Debug */
 }
 #ifdef USE_FULL_ASSERT
