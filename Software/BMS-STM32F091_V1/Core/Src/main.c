@@ -113,7 +113,7 @@ cell_asic BMS_IC[TOTAL_IC]; //!< Global Battery Variable
  **************************************************************************/
 bool REFON = true; //!< Reference Powered Up Bit
 bool ADCOPT = false; //!< ADC Mode option bit
-bool GPIOBITS_A[5] = { true, true, true, true, false }; //!< GPIO Pin Control // Gpio 1,2,3,4,5
+bool GPIOBITS_A[5] = { true, true, true, true, false }; //!< GPIO Pin Control // Gpio 1,2,3,4,5 - [1:4] pulled up for ADC
 bool GPIOBITS_B[4] = { false, false, false, false }; //!< GPIO Pin Control // Gpio 6,7,8,9
 uint16_t UV = UV_THRESHOLD; //!< Under voltage Comparison Voltage
 uint16_t OV = OV_THRESHOLD; //!< Over voltage Comparison Voltage
@@ -150,6 +150,7 @@ void print_cells(uint8_t datalog_en);
 void print_aux(uint8_t datalog_en);
 void serial_print_hex(uint8_t data);
 void check_error(int error);
+uint16_t tempCalc(uint8_t ic, uint8_t temp);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -738,7 +739,7 @@ void print_aux(uint8_t datalog_en) {
 //        Serial.print(":");
 				printf(":");
 //        Serial.print(BMS_IC[current_ic].aux.a_codes[i]*0.0001,4);
-				printf("%0.4f", BMS_IC[current_ic].aux.a_codes[i] * 0.0001);
+				printf("%0.2f", tempCalc(current_ic, i) * 0.01);
 //        Serial.print(",");
 				printf(",");
 			}
@@ -796,6 +797,13 @@ void serial_print_hex(uint8_t data) {
 	} else
 //    Serial.print((byte)data,HEX);
 		printf("%02X", (unsigned char) data);
+}
+
+// To calculate temperature from raw aux ADC value
+uint16_t tempCalc(uint8_t ic, uint8_t temp) {
+  vRef2 = BMS_IC[ic].aux.a_codes[5] * 0.0001;
+  R = BMS_IC[ic].aux.a_codes[temp] / (vRef2 - (BMS_IC[ic].aux.a_codes[temp] * 0.0001));
+  return ((3435 / log(R / r_inf)) - 273.15) * 100;
 }
 
 /*!****************************************************************************
