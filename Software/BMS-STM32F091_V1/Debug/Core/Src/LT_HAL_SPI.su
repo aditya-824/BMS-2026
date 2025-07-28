@@ -1,8 +1,8 @@
 ../Core/Src/LT_HAL_SPI.c:20:6:cs_low	16	static
-../Core/Src/LT_HAL_SPI.c:25:6:cs_high	16	static
-../Core/Src/LT_HAL_SPI.c:30:6:delay_u	16	static
-../Core/Src/LT_HAL_SPI.c:36:6:delay_m	16	static
-../Core/Src/LT_HAL_SPI.c:45:6:spi_enable	8	static
-../Core/Src/LT_HAL_SPI.c:57:6:spi_write_array	40	static
-../Core/Src/LT_HAL_SPI.c:76:6:spi_write_read	48	static
-../Core/Src/LT_HAL_SPI.c:100:9:spi_read_byte	40	static
+../Core/Src/LT_HAL_SPI.c:24:6:cs_high	16	static
+../Core/Src/LT_HAL_SPI.c:28:6:delay_u	16	static
+../Core/Src/LT_HAL_SPI.c:34:6:delay_m	16	static
+../Core/Src/LT_HAL_SPI.c:42:6:spi_enable	8	static
+../Core/Src/LT_HAL_SPI.c:71:6:spi_write_array	40	static
+../Core/Src/LT_HAL_SPI.c:89:6:spi_write_read	48	static
+../Core/Src/LT_HAL_SPI.c:111:9:spi_read_byte	40	static

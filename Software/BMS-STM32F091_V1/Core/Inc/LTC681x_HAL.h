@@ -68,85 +68,76 @@
 #define CS_PIN 4
 
 /*! Cell Voltage data structure. */
-typedef struct
-{
-  uint16_t c_codes[18]; //!< Cell Voltage Codes
-  uint8_t pec_match[6]; //!< If a PEC error was detected during most recent read cmd
+typedef struct {
+	uint16_t c_codes[18]; //!< Cell Voltage Codes
+	uint8_t pec_match[6]; //!< If a PEC error was detected during most recent read cmd
 } cv;
 
 /*! AUX Reg Voltage Data structure */
-typedef struct
-{
-  uint16_t a_codes[9]; //!< Aux Voltage Codes
-  uint8_t pec_match[4]; //!< If a PEC error was detected during most recent read cmd
+typedef struct {
+	uint16_t a_codes[9]; //!< Aux Voltage Codes
+	uint8_t pec_match[4]; //!< If a PEC error was detected during most recent read cmd
 } ax;
 
 /*! Status Reg data structure. */
-typedef struct
-{
-  uint16_t stat_codes[4]; //!< Status codes.
-  uint8_t flags[3]; //!< Byte array that contains the uv/ov flag data
-  uint8_t mux_fail[1]; //!< Mux self test status flag
-  uint8_t thsd[1]; //!< Thermal shutdown status
-  uint8_t pec_match[2]; //!< If a PEC error was detected during most recent read cmd
+typedef struct {
+	uint16_t stat_codes[4]; //!< Status codes.
+	uint8_t flags[3]; //!< Byte array that contains the uv/ov flag data
+	uint8_t mux_fail[1]; //!< Mux self test status flag
+	uint8_t thsd[1]; //!< Thermal shutdown status
+	uint8_t pec_match[2]; //!< If a PEC error was detected during most recent read cmd
 } st;
 
 /*! IC register structure. */
-typedef struct
-{
-  uint8_t tx_data[6];  //!< Stores data to be transmitted
-  uint8_t rx_data[8];  //!< Stores received data
-  uint8_t rx_pec_match; //!< If a PEC error was detected during most recent read cmd
+typedef struct {
+	uint8_t tx_data[6];  //!< Stores data to be transmitted
+	uint8_t rx_data[8];  //!< Stores received data
+	uint8_t rx_pec_match; //!< If a PEC error was detected during most recent read cmd
 } ic_register;
 
 /*! PEC error counter structure. */
-typedef struct
-{
-  uint16_t pec_count; //!< Overall PEC error count
-  uint16_t cfgr_pec;  //!< Configuration register data PEC error count
-  uint16_t cell_pec[6]; //!< Cell voltage register data PEC error count
-  uint16_t aux_pec[4];  //!< Aux register data PEC error count
-  uint16_t stat_pec[2]; //!< Status register data PEC error count
+typedef struct {
+	uint16_t pec_count; //!< Overall PEC error count
+	uint16_t cfgr_pec;  //!< Configuration register data PEC error count
+	uint16_t cell_pec[6]; //!< Cell voltage register data PEC error count
+	uint16_t aux_pec[4];  //!< Aux register data PEC error count
+	uint16_t stat_pec[2]; //!< Status register data PEC error count
 } pec_counter;
 
 /*! Register configuration structure */
-typedef struct
-{
-  uint8_t cell_channels; //!< Number of Cell channels
-  uint8_t stat_channels; //!< Number of Stat channels
-  uint8_t aux_channels;  //!< Number of Aux channels
-  uint8_t num_cv_reg;    //!< Number of Cell voltage register
-  uint8_t num_gpio_reg;  //!< Number of Aux register
-  uint8_t num_stat_reg;  //!< Number of  Status register
+typedef struct {
+	uint8_t cell_channels; //!< Number of Cell channels
+	uint8_t stat_channels; //!< Number of Stat channels
+	uint8_t aux_channels;  //!< Number of Aux channels
+	uint8_t num_cv_reg;    //!< Number of Cell voltage register
+	uint8_t num_gpio_reg;  //!< Number of Aux register
+	uint8_t num_stat_reg;  //!< Number of  Status register
 } register_cfg;
 
 /*! Cell variable structure */
-typedef struct
-{
-  ic_register config;
-  ic_register configb;
-  cv  cells;
-  ax  aux;
-  st  stat;
-  ic_register com;
-  ic_register pwm;
-  ic_register pwmb;
-  ic_register sctrl;
-  ic_register sctrlb;
-  uint8_t sid[6];
-  bool isospi_reverse;
-  pec_counter crc_count;
-  register_cfg ic_reg;
-  long system_open_wire;
+typedef struct {
+	ic_register config;
+	ic_register configb;
+	cv cells;
+	ax aux;
+	st stat;
+	ic_register com;
+	ic_register pwm;
+	ic_register pwmb;
+	ic_register sctrl;
+	ic_register sctrlb;
+	uint8_t sid[6];
+	bool isospi_reverse;
+	pec_counter crc_count;
+	register_cfg ic_reg;
+	long system_open_wire;
 } cell_asic;
 
 /* Wake isoSPI up from IDlE state and enters the READY state */
 void wakeup_idle(uint8_t total_ic); //Number of ICs in the system
 
-
 /* Generic wakeup command to wake the LTC681x from sleep state */
 void wakeup_sleep(uint8_t total_ic); //Number of ICs in the system
-
 
 /* Generic function to write 68xx commands. Function calculates PEC for tx_cmd data. */
 void cmd_68(uint8_t tx_cmd[2]); //The command to be transmitted
@@ -314,7 +305,6 @@ void LTC681x_clrstat();
 /* Starts the Mux Decoder diagnostic self test */
 void LTC681x_diagn();
 
-
 /* Starts cell voltage self test conversion */
 void LTC681x_cvst(uint8_t MD, //ADC Mode
 		uint8_t ST //Self Test
@@ -399,129 +389,109 @@ void LTC681x_axow(uint8_t MD, //ADC Mode
 //								cell_asic ic[] // A two dimensional array that will store the data
 //								);
 
-
 /* Clears all of the DCC bits in the configuration registers */
 void LTC681x_clear_discharge(uint8_t total_ic, // Number of ICs in the daisy chain
-							 cell_asic *ic // A two dimensional array that will store the data
-							 );
-
+		cell_asic *ic // A two dimensional array that will store the data
+		);
 
 /* Writes the pwm register */
 void LTC681x_wrpwm(uint8_t total_ic, // Number of ICs in the daisy chain
-                   uint8_t pwmReg, // The PWM Register to be written A or B
-                   cell_asic ic[] // A two dimensional array that stores the data to be written
-                  );
-
+		uint8_t pwmReg, // The PWM Register to be written A or B
+		cell_asic ic[] // A two dimensional array that stores the data to be written
+		);
 
 /* Reads pwm registers of a LTC681x daisy chain */
 int8_t LTC681x_rdpwm(uint8_t total_ic, //Number of ICs in the system
-                     uint8_t pwmReg, // The PWM Register to be written A or B
-                     cell_asic ic[] // A two dimensional array that will store the data
-                    );
-
+		uint8_t pwmReg, // The PWM Register to be written A or B
+		cell_asic ic[] // A two dimensional array that will store the data
+		);
 
 /*  Write the LTC681x Sctrl register */
 void LTC681x_wrsctrl(uint8_t total_ic, // Number of ICs in the daisy chain
-                     uint8_t sctrl_reg, // The Sctrl Register to be written A or B
-                     cell_asic *ic  // A two dimensional array that stores the data to be written
-                    );
-
+		uint8_t sctrl_reg, // The Sctrl Register to be written A or B
+		cell_asic *ic // A two dimensional array that stores the data to be written
+		);
 
 /*  Reads sctrl registers of a LTC681x daisy chain */
 int8_t LTC681x_rdsctrl(uint8_t total_ic, // Number of ICs in the daisy chain
-                       uint8_t sctrl_reg, // The Sctrl Register to be written A or B
-                       cell_asic *ic // A two dimensional array that the function stores the read data
-                      );
+		uint8_t sctrl_reg, // The Sctrl Register to be written A or B
+		cell_asic *ic // A two dimensional array that the function stores the read data
+		);
 
 /*
-Start Sctrl data communication
-This command will start the sctrl pulse communication over the spins
-*/
+ Start Sctrl data communication
+ This command will start the sctrl pulse communication over the spins
+ */
 void LTC681x_stsctrl();
 
-
 /*
-The command clears the Sctrl registers and initializes
-all values to 0. The register will read back hexadecimal 0x00
-after the command is sent.
-*/
+ The command clears the Sctrl registers and initializes
+ all values to 0. The register will read back hexadecimal 0x00
+ after the command is sent.
+ */
 void LTC681x_clrsctrl();
-
 
 /* Writes the comm register */
 void LTC681x_wrcomm(uint8_t total_ic, //The number of ICs being written to
-                    cell_asic ic[] // A two dimensional array that stores the data to be written
-                   );
-
+		cell_asic ic[] // A two dimensional array that stores the data to be written
+		);
 
 /* Reads COMM registers of a LTC681x daisy chain */
 int8_t LTC681x_rdcomm(uint8_t total_ic, //Number of ICs in the system
-                      cell_asic ic[] //A two dimensional array that stores the read data
-                     );
-
+		cell_asic ic[] //A two dimensional array that stores the read data
+		);
 
 /* Shifts data in COMM register out over LTC681x SPI/I2C port */
 void LTC681x_stcomm(uint8_t len); //Length of data to be transmitted
 
-
 /* Helper function that increments PEC counters */
 void LTC681x_check_pec(uint8_t total_ic, //Number of ICs in the system
-					   uint8_t reg, //Type of Register
-					   cell_asic *ic //A two dimensional array that stores the data
-					   );
-
+		uint8_t reg, //Type of Register
+		cell_asic *ic //A two dimensional array that stores the data
+		);
 
 /* Helper Function to reset PEC counters */
 void LTC681x_reset_crc_count(uint8_t total_ic, //Number of ICs in the system
-							 cell_asic *ic //A two dimensional array that stores the data
-							 );
-
+		cell_asic *ic //A two dimensional array that stores the data
+		);
 
 /* Helper function to initialize CFG variables */
 void LTC681x_init_cfg(uint8_t total_ic, //Number of ICs in the system
-					  cell_asic *ic //A two dimensional array that stores the data
-					  );
-
+		cell_asic *ic //A two dimensional array that stores the data
+		);
 
 /* Helper function to set CFGR variable */
 void LTC681x_set_cfgr(uint8_t nIC, // Current IC
-					 cell_asic *ic, // A two dimensional array that stores the data
-					 bool refon, // The REFON bit
-					 bool adcopt, // The ADCOPT bit
-					 bool gpio[5], // The GPIO bits
-					 bool dcc[12], // The DCC bits
-					 bool dcto[4], // The Dcto bits
-					 uint16_t uv, // The UV value
-					 uint16_t  ov // The OV value
-					 );
-
+		cell_asic *ic, // A two dimensional array that stores the data
+		bool refon, // The REFON bit
+		bool adcopt, // The ADCOPT bit
+		bool gpio[5], // The GPIO bits
+		bool dcc[12], // The DCC bits
+		bool dcto[4], // The Dcto bits
+		uint16_t uv, // The UV value
+		uint16_t ov // The OV value
+		);
 
 /* Helper function to set the REFON bit */
 void LTC681x_set_cfgr_refon(uint8_t nIC, cell_asic *ic, bool refon);
 
-
 /* Helper function to set the ADCOPT bit */
 void LTC681x_set_cfgr_adcopt(uint8_t nIC, cell_asic *ic, bool adcopt);
 
-
 /* Helper function to set GPIO bits */
-void LTC681x_set_cfgr_gpio(uint8_t nIC, cell_asic *ic,bool gpio[5]);
-
+void LTC681x_set_cfgr_gpio(uint8_t nIC, cell_asic *ic, bool gpio[5]);
 
 /* Helper function to control discharge */
-void LTC681x_set_cfgr_dis(uint8_t nIC, cell_asic *ic,bool dcc[12]);
-
+void LTC681x_set_cfgr_dis(uint8_t nIC, cell_asic *ic, bool dcc[12]);
 
 /* Helper function to control discharge time value */
-void LTC681x_set_cfgr_dcto(uint8_t nIC, cell_asic *ic,bool dcto[4]);
-
+void LTC681x_set_cfgr_dcto(uint8_t nIC, cell_asic *ic, bool dcto[4]);
 
 /* Helper Function to set UV value in CFG register */
-void LTC681x_set_cfgr_uv(uint8_t nIC, cell_asic *ic,uint16_t uv);
-
+void LTC681x_set_cfgr_uv(uint8_t nIC, cell_asic *ic, uint16_t uv);
 
 /* Helper function to set OV value in CFG register */
-void LTC681x_set_cfgr_ov(uint8_t nIC, cell_asic *ic,uint16_t ov);
+void LTC681x_set_cfgr_ov(uint8_t nIC, cell_asic *ic, uint16_t ov);
 
 extern const uint16_t crc15Table[256]; // Variable declaration, defined & re-declared in 681x & 6813 files
 

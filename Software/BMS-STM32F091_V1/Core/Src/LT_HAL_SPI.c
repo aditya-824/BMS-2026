@@ -15,27 +15,24 @@
 #define CS_GPIO_PORT GPIOA // GPIO Port for software CS pin
 
 extern SPI_HandleTypeDef hspi1; // SPI Handle
-extern TIM_HandleTypeDef htim2; // Timer Handle
+extern TIM_HandleTypeDef htim3; // Timer Handle
 
-void cs_low(uint8_t pin)
-{
-  output_low(pin);
+void cs_low(uint8_t pin) {
+	output_low(pin);
 }
 
-void cs_high(uint8_t pin)
-{
-  output_high(pin);
+void cs_high(uint8_t pin) {
+	output_high(pin);
 }
 
-void delay_u(uint16_t micro)
-{
-	__HAL_TIM_SET_COUNTER(&htim2,0);  // set the counter value a 0
-		while (__HAL_TIM_GET_COUNTER(&htim2) < micro);  // wait for the counter to reach the us input
+void delay_u(uint16_t micro) {
+	__HAL_TIM_SET_COUNTER(&htim3, 0);  // set the counter value a 0
+	while (__HAL_TIM_GET_COUNTER(&htim3) < micro)
+		;  // wait for the counter to reach the us input
 }
 
-void delay_m(uint16_t milli)
-{
-  HAL_Delay(milli);
+void delay_m(uint16_t milli) {
+	HAL_Delay(milli);
 }
 
 // Setup the processor for hardware SPI communication.
@@ -44,63 +41,77 @@ void delay_m(uint16_t milli)
 // calls this function.
 void spi_enable() // Configures SCK frequency. Use constant defined in header file.
 {
-  //pinMode(SCK, OUTPUT);             //! 1) Setup SCK as output
-  //pinMode(MOSI, OUTPUT);            //! 2) Setup MOSI as output
-  //pinMode(QUIKEVAL_CS, OUTPUT);     //! 3) Setup CS as output
+	//pinMode(SCK, OUTPUT);             //! 1) Setup SCK as output
+	//pinMode(MOSI, OUTPUT);            //! 2) Setup MOSI as output
+	//pinMode(QUIKEVAL_CS, OUTPUT);     //! 3) Setup CS as output
 //  SPI.begin();
 //  SPI.setClockDivider(spi_clock_divider);
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+	hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+//		Error_Handler();
+	}
 }
 
 /*
-Writes an array of bytes out of the SPI port
-*/
+ Writes an array of bytes out of the SPI port
+ */
 void spi_write_array(uint8_t len, // Option: Number of bytes to be written on the SPI port
-                     uint8_t data[] //Array of bytes to be written on the SPI port
-                    )
-{
+		uint8_t data[] //Array of bytes to be written on the SPI port
+		) {
 	uint8_t i;
 	uint8_t rx_data;
 
-  for (i = 0; i < len; i++)
-  {
+	for (i = 0; i < len; i++) {
 //	  SPI.transfer((int8_t)data[i]);
-	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)&data[i], &rx_data, 1, HAL_MAX_DELAY);
-  }
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) &data[i], &rx_data, 1,
+				HAL_MAX_DELAY);
+	}
 }
 
 /*
  Writes and read a set number of bytes using the SPI port.
 
-*/
+ */
 
-void spi_write_read(uint8_t tx_Data[],//array of data to be written on SPI port
-                    uint8_t tx_len, //length of the tx data arry
-                    uint8_t *rx_data,//Input: array that will store the data read by the SPI port
-                    uint8_t rx_len //Option: number of bytes to be read from the SPI port
-                   )
-{
+void spi_write_read(uint8_t tx_Data[], //array of data to be written on SPI port
+		uint8_t tx_len, //length of the tx data arry
+		uint8_t *rx_data, //Input: array that will store the data read by the SPI port
+		uint8_t rx_len //Option: number of bytes to be read from the SPI port
+		) {
 	uint8_t i;
 	uint8_t data;
 
-  for (i = 0; i < tx_len; i++)
-  {
+	for (i = 0; i < tx_len; i++) {
 //	  SPI.transfer(tx_Data[i]);
-	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&tx_Data[i], &data, 1, HAL_MAX_DELAY);
-  }
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) &tx_Data[i], &data, 1,
+				HAL_MAX_DELAY);
+	}
 
-  for (uint8_t i = 0; i < rx_len; i++)
-  {
+	for (uint8_t i = 0; i < rx_len; i++) {
 //    rx_data[i] = (uint8_t)SPI.transfer(0xFF);
-	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)0xFF, (uint8_t*)&rx_data[i], 1, HAL_MAX_DELAY);
-  }
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) 0xFF, (uint8_t*) &rx_data[i],
+				1, HAL_MAX_DELAY);
+	}
 
 }
 
-
-uint8_t spi_read_byte(uint8_t tx_dat)
-{
-  uint8_t data;
+uint8_t spi_read_byte(uint8_t tx_dat) {
+	uint8_t data;
 //  data = (uint8_t)SPI.transfer(0xFF);
-  HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)0xFF, (uint8_t *)&data, 1, HAL_MAX_DELAY);
-  return(data);
+	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) 0xFF, (uint8_t*) &data, 1,
+			HAL_MAX_DELAY);
+	return (data);
 }
